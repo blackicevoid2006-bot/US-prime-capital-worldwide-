@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Prime Capital Worldwide | Institutional Asset Management</title>
+    <style>
+        :root {
+            --bg-color: #0b0f17;
+            --card-bg: #131c31;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 16px; 
+            background-image: radial-gradient(circle at 50% 0%, #152238 0%, var(--bg-color) 70%);
+        }
+
+        /* Toast Notification Container */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            width: 100%;
+            pointer-events: none;
+        }
+        .toast {
+            background: #182238;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 14px 18px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 0.84rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            border-left: 4px solid var(--accent);
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        @keyframes slideInToast {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .splash-logo {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 8px;
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+        .splash-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            opacity: 0;
+            animation: fadeInUp 0.7s ease 0.2s forwards;
+        }
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+            to { text-shadow: 0 0 25px rgba(56, 189, 248, 0.5); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 440px; 
+            background: var(--card-bg); 
+            border-radius: 24px; 
+            border: 1px solid var(--card-border); 
+            padding: 28px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .hidden { display: none !important; }
+
+        .brand-header { text-align: center; margin-bottom: 20px; }
+        .brand-logo { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+        h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+        h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 14px; color: var(--text-main); text-align: left; }
+        p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px; line-height: 1.5; }
+
+        .lang-picker { text-align: right; margin-bottom: 12px; }
+        .lang-select { background: #0b0f17; border: 1px solid var(--card-border); color: var(--text-muted); padding: 4px 8px; border-radius: 8px; font-size: 0.72rem; outline: none; cursor: pointer; }
+
+        .input-group { margin-bottom: 16px; text-align: left; }
+        .input-group label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 13px 15px; 
+            background: #0b0f17; 
+            border: 1px solid var(--card-border); 
+            border-radius: 12px; 
+            color: var(--text-main); 
+            font-size: 0.92rem; 
+            transition: var(--transition); 
+        }
+        input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+        button { 
+            width: 100%; 
+            padding: 13px; 
+            background: var(--accent); 
+            border: none; 
+            border-radius: 12px; 
+            color: #0b0f17; 
+            font-weight: 700; 
+            font-size: 0.92rem; 
+            cursor: pointer; 
+            transition: var(--transition); 
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+        }
+        button:hover { opacity: 0.92; transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+
+        .nav-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: #0b0f17; padding: 4px; border-radius: 14px; border: 1px solid var(--card-border); margin-bottom: 20px; }
+        .nav-tabs button { background: transparent; color: var(--text-muted); border: none; padding: 8px 1px; font-size: 0.6rem; border-radius: 8px; font-weight: 600; box-shadow: none; text-transform: uppercase; letter-spacing: 0.2px; }
+        .nav-tabs button.active { background: var(--accent); color: #0b0f17; box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2); }
+
+        .balance-card { 
+            background: #0b0f17; 
+            border: 1px solid var(--card-border); 
+            border-radius: 18px; 
+            padding: 20px; 
+            text-align: center; 
+            margin-bottom: 16px; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .balance-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--success)); }
+        .balance-amount { font-size: 2.2rem; font-weight: 800; color: var(--success); margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+        
+        .status-badge { background: #0b0f17; border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 12px; font-size: 0.82rem; color: var(--warning); display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        
+        .wallet-box { background: #0b0f17; border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; text-align: center; margin-bottom: 16px; }
+        .wallet-address { font-size: 0.78rem; color: var(--accent); word-break: break-all; font-family: monospace; margin-top: 6px; background: rgba(56, 189, 248, 0.04); padding: 8px; border-radius: 8px; border: 1px dashed var(--accent); }
+
+        .file-upload-container { margin-bottom: 16px; text-align: left; }
+        .file-upload-label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: #0b0f17; border: 2px dashed var(--card-border); border-radius: 12px; cursor: pointer; color: var(--text-muted); font-size: 0.82rem; transition: var(--transition); }
+        .file-upload-label:hover { border-color: var(--accent); color: var(--text-main); }
+
+        .lore-banner {
+            background: rgba(56, 189, 248, 0.03);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .auth-switch { text-align: center; margin-top: 16px; font-size: 0.82rem; color: var(--text-muted); }
+        .auth-switch span { color: var(--accent); cursor: pointer; font-weight: 600; }
+
+        .error-msg { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-size: 0.8rem; margin-bottom: 14px; text-align: center; }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border); }
+        .user-profile-header { display: flex; align-items: center; gap: 10px; }
+        .avatar-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #0b0f17; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+        .user-name-display { font-size: 0.82rem; font-weight: 600; color: var(--text-main); }
+        .user-email-sub { font-size: 0.7rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .logout-btn { background: transparent; border: 1px solid var(--card-border); color: var(--danger); padding: 5px 10px; border-radius: 8px; font-size: 0.7rem; width: auto; font-weight: 600; cursor: pointer; }
+        
+        .admin-badge { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); color: var(--warning); padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; display: inline-block; }
+        
+        .admin-console-box { background: rgba(245, 158, 11, 0.04); border: 1px solid var(--warning); border-radius: 14px; padding: 16px; margin-bottom: 16px; text-align: left; }
+        .admin-console-title { font-size: 0.8rem; font-weight: 700; color: var(--warning); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .admin-section-divider { border: 0; height: 1px; background: rgba(245, 158, 11, 0.2); margin: 14px 0; }
+
+        .credential-box { background: #0b0f17; border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: left; font-size: 0.8rem; }
+        .credential-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--card-border); }
+        .credential-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="splash-screen">
+        <div class="splash-logo">US Prime Capital Worldwide</div>
+        <div class="splash-title">Initializing Terminal...</div>
+    </div>
+
+    <div class="container hidden" id="auth-screen">
+        <div class="lang-picker">
+            <select class="lang-select" onchange="changeLanguage(this.value)">
+                <option value="en">English 🇺🇸</option>
+                <option value="es">Español 🇪🇸</option>
+                <option value="fr">Français 🇫🇷</option>
+            </select>
+        </div>
+
+        <div class="brand-header">
+            <div class="brand-logo">US Prime Capital Worldwide</div>
+            <h1 id="auth-title">Global Access</h1>
+        </div>
+        <p id="auth-subtitle">Institutional digital asset yield management</p>
+        
+        <div id="auth-error" class="error-msg hidden"></div>
+
+        <div class="input-group" id="name-group">
+            <label>Full Name</label>
+            <input type="text" id="auth-name" placeholder="John Doe">
+        </div>
+
+        <div class="input-group" id="gender-group">
+            <label>Gender</label>
+            <select id="auth-gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="auth-email" placeholder="name@example.com">
+        </div>
+        
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="auth-password" placeholder="••••••••">
+        </div>
+
+        <div class="input-group" id="pin-group">
+            <label>4-Digit Withdrawal PIN</label>
+            <input type="password" id="auth-pin" placeholder="1234" maxlength="4" pattern="[0-9]*">
+        </div>
+
+        <button id="auth-btn" onclick="playClickSound(); handleAuth();">Sign In</button>
+
+        <div class="lore-banner" style="margin-top: 16px;">
+            🌐 <strong>High-Frequency Capital Deployment Notice:</strong> Assets deployed into US Prime Capital Worldwide are routed into proprietary algorithmic yield pools. Portfolio balances reflect real-time continuous compounding calculated dynamically on an intra-second settlement cadence (2.0% 24h Yield Equivalence).
+        </div>
+
+        <div class="auth-switch" id="auth-switch-text">
+            Don't have an account? <span onclick="playClickSound(); toggleAuthMode();">Create account</span>
+        </div>
+    </div>
+    <!-- MAIN DASHBOARD APP -->
+    <div class="container hidden" id="app-screen">
+        <div class="header-top">
+            <div class="user-profile-header">
+                <div class="avatar-circle" id="user-avatar">M</div>
+                <div>
+                    <div class="user-name-display" id="nav-user-name">Investor Account</div>
+                    <div class="user-email-sub" id="nav-user-email">user@email.com</div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="playClickSound(); logout();">Sign Out</button>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="active" id="tab-btn-dash" onclick="playClickSound(); switchTab('dashboard');">Portfolio</button>
+            <button id="tab-btn-dep" onclick="playClickSound(); switchTab('deposit');">Deposit</button>
+            <button id="tab-btn-with" onclick="playClickSound(); switchTab('withdraw');">Withdraw</button>
+            <button id="tab-btn-aff" onclick="playClickSound(); switchTab('affiliate');">Affiliate</button>
+            <button id="tab-btn-set" onclick="playClickSound(); switchTab('settings');">Settings</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="section">
+            <div id="admin-indicator" class="admin-badge hidden">Admin Control Active</div>
+            <h2>Portfolio Overview</h2>
+            <div class="balance-card">
+                <p style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Live Compounding Balance (USDT)</p>
+                <div class="balance-amount" id="display-balance">$0.00</div>
+            </div>
+            <div class="status-badge">
+                <span>Intra-Second Settlement</span>
+                <strong style="color: var(--success);">2.0% Daily Active</strong>
+            </div>
+
+            <!-- CLEAN ORGANIZED ADMIN CONSOLE -->
+            <div id="admin-panel" class="admin-console-box hidden">
+                <div class="admin-console-title">⚡ Executive Admin Management Console</div>
+                
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">1. Approve Deposit & Trigger Bonuses</div>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <label>Target User Email</label>
+                    <input type="email" id="admin-target-email" placeholder="user@email.com">
+                </div>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <label>Deposit Amount (USDT)</label>
+                    <input type="number" id="admin-credit-amount" placeholder="e.g. 100">
+                </div>
+                <button onclick="playClickSound(); adminCreditUser();" style="background: var(--warning); color: #000; margin-bottom: 4px;">Approve Deposit (Triggers 20% Sponsor & 10% Welcome Bonuses)</button>
+
+                <hr class="admin-section-divider">
+
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">2. Resolve Pending Withdrawal ($50 Min)</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button onclick="playClickSound(); adminResolveWithdrawal('approve');" style="background: var(--success); color: #000; font-size: 0.8rem;">Approve Payout</button>
+                    <button onclick="playClickSound(); adminResolveWithdrawal('reject');" style="background: var(--danger); color: #fff; font-size: 0.8rem;">Reject & Refund</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Tab -->
+        <div id="tab-deposit" class="section hidden">
+            <h2>Fund Portfolio</h2>
+            <p style="text-align: left;">Send <strong>USDT (TRC20 Network Only)</strong> to the official corporate address below. <strong>Minimum deposit: $50 USDT.</strong> (Referred users get a <strong>10% welcome bonus</strong> upon admin verification!)</p>
+            
+            <div class="wallet-box">
+                <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">USDT TRC20 Deposit Address</span>
+                <div class="wallet-address">TX7K9pQzY1vBxMnLw4RtHg8JdF3sA2eC6q</div>
+            </div>
+
+            <form action="https://formsubmit.co/YOUR_EMAIL_HERE" method="POST" enctype="multipart/form-data" onsubmit="return handleDepositSubmit(event)">
+                <input type="hidden" name="_subject" value="US Prime Capital: Deposit Verification Proof">
+                
+                <div class="input-group">
+                    <label>Registered Account Email</label>
+                    <input type="email" name="user_email" id="form-user-email" required readonly style="opacity: 0.7;">
+                </div>
+                
+                <div class="input-group">
+                    <label>Amount Transferred (USDT)</label>
+                    <input type="number" name="amount" id="deposit-amount-input" placeholder="Min $50" required step="any" min="50">
+                </div>
+
+                <div class="file-upload-container">
+                    <label class="file-upload-label" for="receipt-file">
+                        📄 <span id="file-label-text">Upload Transaction Receipt Screenshot</span>
+                    </label>
+                    <input type="file" name="screenshot" id="receipt-file" accept="image/*" required style="display: none;" onchange="updateFilePreview(this)">
+                </div>
+
+                <button type="submit" onclick="playClickSound()">I Have Completed Payment ($50 Min)</button>
+            </form>
+        </div>
+
+        <!-- Withdraw Tab -->
+        <div id="tab-withdraw" class="section hidden">
+            <h2>Request Payout</h2>
+            <p style="text-align: left;">Payouts are processed directly to your external USDT TRC20 wallet address. <strong>Minimum withdrawal: $50 USDT.</strong></p>
+            
+            <div class="input-group">
+                <label>Withdrawal Amount (USDT)</label>
+                <input type="number" id="withdraw-amount" placeholder="Min $50" step="any" min="50">
+            </div>
+            <div class="input-group">
+                <label>Destination USDT TRC20 Address</label>
+                <input type="text" id="withdraw-address" placeholder="Paste TRC20 wallet address">
+            </div>
+            <div class="input-group">
+                <label>4-Digit Security PIN</label>
+                <input type="password" id="withdraw-pin" placeholder="Enter 4-digit PIN" maxlength="4" pattern="[0-9]*">
+            </div>
+            <button onclick="playClickSound(); requestWithdrawal();">Submit Withdrawal Request ($50 Min)</button>
+        </div>
+
+        <!-- Affiliate Tab -->
+        <div id="tab-affiliate" class="section hidden">
+            <h2>Affiliate Program</h2>
+            <p style="font-size: 0.85rem; text-align: left;">Earn rewards by inviting investors to US Prime Capital Worldwide.</p>
+            
+            <div class="lore-banner" style="text-align: left;">
+                💎 <strong>Referral Rewards Structure:</strong><br>
+                • **You get 20%** of any deposit made by someone who registers using your link.<br>
+                • **Your referral gets 10%** added as a welcome bonus on their deposit!<br>
+                *(Bonuses remain pending until admin verifies the qualifying deposit of $50 or more).*
+            </div>
+
+            <div class="input-group">
+                <label>Your Personal Referral Link</label>
+                <input type="text" id="affiliate-link" readonly style="font-size: 0.78rem; color: var(--accent);">
+            </div>
+            <button onclick="playClickSound(); copyAffiliateLink();">Copy Referral Link</button>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="tab-settings" class="section hidden">
+            <h2>Account Settings</h2>
+            
+            <div class="credential-box">
+                <div style="font-weight: bold; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px;">Account Credentials & Details</div>
+                <div class="credential-row"><span>Email:</span> <strong id="profile-email-view">user@email.com</strong></div>
+                <div class="credential-row"><span>Password:</span> <strong id="profile-pass-view">••••••••</strong></div>
+                <div class="credential-row"><span>Security PIN:</span> <strong id="profile-pin-view">••••</strong></div>
+                <div class="credential-row"><span>Gender:</span> <strong id="profile-gender-view">Male</strong></div>
+            </div>
+
+            <div class="input-group">
+                <label>Display Name</label>
+                <input type="text" id="settings-name" placeholder="Update your name">
+            </div>
+            <button onclick="playClickSound(); saveSettings();">Update Profile</button>
+        </div>
+    </div>
+    <script>
+        // Web Audio API Sound Generator for Button Clicks
+        function playClickSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch(e) {}
+        }
+
+        // In-App Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = '✅';
+            if(type === 'error') icon = '❌';
+            if(type === 'warning') icon = '⚠️';
+            
+            toast.innerHTML = `<span>${icon}</span> <div>${message}</div>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        let isSignUpMode = false;
+        let currentUser = null;
+        let yieldInterval = null;
+        const dailyRate = 0.02;
+        const secondRate = Math.pow(1 + dailyRate, 1 / 86400) - 1;
+        
+        const ADMIN_EMAIL = "yourrealemail@gmail.com"; // Replace with your actual admin email
+
+        window.onload = function() {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    splash.style.visibility = 'hidden';
+                }
+            }, 1200);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const refParam = urlParams.get('ref');
+            if(refParam) {
+                localStorage.setItem('meridian_pending_ref', refParam.trim().toLowerCase());
+            }
+
+            const savedUser = localStorage.getItem('meridian_active_user');
+            if (savedUser) loginUser(savedUser);
+        };
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            document.getElementById('name-group').style.display = isSignUpMode ? 'block' : 'none';
+            document.getElementById('gender-group').style.display = isSignUpMode ? 'block' : 'none';
+            document.getElementById('pin-group').style.display = 'block';
+            document.getElementById('auth-title').innerText = isSignUpMode ? 'Investor Registration' : 'Global Access';
+            document.getElementById('auth-btn').innerText = isSignUpMode ? 'Initialize Account' : 'Sign In';
+            document.getElementById('auth-switch-text').innerHTML = isSignUpMode ? 
+                'Already have an account? <span onclick="playClickSound(); toggleAuthMode();">Sign in</span>' : 
+                'Don\'t have an account? <span onclick="playClickSound(); toggleAuthMode();">Create account</span>';
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value.trim() || 'Investor';
+            const gender = document.getElementById('auth-gender').value;
+            const pin = document.getElementById('auth-pin').value.trim();
+
+            if(!email || !password) {
+                showAuthError('Please enter all required credentials.');
+                showToast('Please enter all required credentials.', 'error');
+                return;
+            }
+
+            if(isSignUpMode && (!pin || pin.length !== 4)) {
+                showAuthError('Please enter a valid 4-digit security PIN for withdrawals.');
+                showToast('Please enter a valid 4-digit security PIN.', 'error');
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('meridian_users') || '{}');
+
+            if(isSignUpMode) {
+                if(users[email]) {
+                    showAuthError('An account with this email address already exists.');
+                    showToast('Account already exists with this email.', 'error');
+                    return;
+                }
+                let referredBy = localStorage.getItem('meridian_pending_ref') || '';
+                users[email] = { 
+                    name: name, 
+                    gender: gender, 
+                    password: password, 
+                    pin: pin,
+                    balance: 0.00, 
+                    startTime: Date.now(), 
+                    pendingWithdrawal: 0, 
+                    referredBy: referredBy,
+                    hasDeposited: false 
+                };
+                localStorage.setItem('meridian_users', JSON.stringify(users));
+                loginUser(email);
+                showToast('Account successfully initialized!', 'success');
+            } else {
+                if(!users[email] && email === ADMIN_EMAIL) {
+                    users[email] = { name: "System Admin", gender: "Prefer not to say", password: password, pin: "1234", balance: 0.00, startTime: Date.now(), pendingWithdrawal: 0, referredBy: "", hasDeposited: true };
+                    localStorage.setItem('meridian_users', JSON.stringify(users));
+                } else if(!users[email] || users[email].password !== password) {
+                    showAuthError('Invalid email or password.');
+                    showToast('Invalid email or password.', 'error');
+                    return;
+                }
+                loginUser(email);
+                showToast('Successfully signed in.', 'success');
+            }
+        }
+
+        function loginUser(email) {
+            currentUser = email;
+            localStorage.setItem('meridian_active_user', email);
+            
+            let users = JSON.parse(localStorage.getItem('meridian_users') || '{}');
+            let userData = users[email] || { name: 'Investor', gender: 'Not specified', balance: 0, pin: '1234' };
+
+            document.getElementById('nav-user-name').innerText = userData.name || 'Investor';
+            document.getElementById('nav-user-email').innerText = email;
+            document.getElementById('form-user-email').value = email;
+            document.getElementById('user-avatar').innerText = (userData.name || 'M').charAt(0).toUpperCase();
+            
+            document.getElementById('profile-email-view').innerText = email;
+            document.getElementById('profile-pass-view').innerText = userData.password;
+            document.getElementById('profile-pin-view').innerText = userData.pin || '1234';
+            document.getElementById('profile-gender-view').innerText = userData.gender || 'Not specified';
+            document.getElementById('affiliate-link').value = `${window.location.origin}${window.location.pathname}?ref=${encodeURIComponent(email)}`;
+
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+
+            if(email === ADMIN_EMAIL) {
+                document.getElementById('admin-indicator').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+            }
+
+            startYieldTicker();
+        }
+
+        function logout() {
+            clearInterval(yieldInterval);
+            localStorage.removeItem('meridian_active_user');
+            currentUser = null;
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            showToast('Signed out successfully.', 'warning');
+        }
+
+        function getUserData(email = currentUser) {
+            let users = JSON.parse(localStorage.getItem('meridian_users') || '{}');
+            return users[email] || { balance: 0, startTime: Date.now(), pendingWithdrawal: 0, referredBy: '', hasDeposited: false, pin: '1234' };
+        }
+
+        function saveUserData(data, email = currentUser) {
+            let users = JSON.parse(localStorage.getItem('meridian_users') || '{}');
+            users[email] = data;
+            localStorage.setItem('meridian_users', JSON.stringify(users));
+        }
+
+        function startYieldTicker() {
+            if(yieldInterval) clearInterval(yieldInterval);
+            yieldInterval = setInterval(() => {
+                let data = getUserData();
+                if(data.balance > 0) {
+                    let now = Date.now();
+                    let secondsElapsed = (now - data.startTime) / 1000;
+                    let currentBalance = data.balance * Math.pow(1 + secondRate, secondsElapsed);
+                    document.getElementById('display-balance').innerText = `$${currentBalance.toFixed(2)}`;
+                } else {
+                    document.getElementById('display-balance').innerText = `$0.00`;
+                }
+            }, 1000);
+        }
+
+        function switchTab(tabName) {
+            ['dashboard', 'deposit', 'withdraw', 'affiliate', 'settings'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t.substring(0,4)}`)?.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabName.substring(0,4)}`)?.classList.add('active');
+        }
+
+        function updateFilePreview(input) {
+            if(input.files[0]) {
+                document.getElementById('file-label-text').innerText = `Selected: ${input.files[0].name}`;
+            }
+        }
+
+        function handleDepositSubmit(e) {
+            let amt = parseFloat(document.getElementById('deposit-amount-input').value);
+            if(!amt || amt < 50) {
+                showToast('Minimum deposit amount is $50 USDT.', 'error');
+                e.preventDefault();
+                return false;
+            }
+            showToast('Deposit proof transmitted successfully! Balance and welcome bonus will update upon admin verification.', 'success');
+            return true;
+        }
+
+        function requestWithdrawal() {
+            let amt = parseFloat(document.getElementById('withdraw-amount').value);
+            let addr = document.getElementById('withdraw-address').value.trim();
+            let pinInput = document.getElementById('withdraw-pin').value.trim();
+            let data = getUserData();
+
+            let now = Date.now();
+            let secondsElapsed = (now - data.startTime) / 1000;
+            let currentBalance = data.balance > 0 ? data.balance * Math.pow(1 + secondRate, secondsElapsed) : 0;
+
+            if(!amt || amt < 50 || !addr || !pinInput) {
+                showToast('Please enter a valid amount (Minimum $50), destination address, and your 4-digit PIN.', 'error');
+                return;
+            }
+
+            if(pinInput !== data.pin) {
+                showToast('Incorrect security PIN. Access denied.', 'error');
+                return;
+            }
+
+            if(amt > currentBalance) {
+                showToast('Requested amount exceeds available compounding balance.', 'error');
+                return;
+            }
+
+            data.balance = Math.max(0, currentBalance - amt);
+            data.startTime = Date.now();
+            data.pendingWithdrawal = amt;
+
+            saveUserData(data);
+
+            showToast('Withdrawal request submitted successfully! Pending payout execution.', 'success');
+            document.getElementById('withdraw-amount').value = '';
+            document.getElementById('withdraw-address').value = '';
+            document.getElementById('withdraw-pin').value = '';
+            switchTab('dashboard');
+        }
+
+        // ADMIN FUNCTIONS
+        function adminCreditUser() {
+            let targetEmail = document.getElementById('admin-target-email').value.trim().toLowerCase();
+            let creditAmt = parseFloat(document.getElementById('admin-credit-amount').value);
+            
+            if(!targetEmail || !creditAmt || creditAmt < 50) {
+                showToast('Enter valid target user email and minimum deposit amount of $50.', 'error');
+                return;
+            }
+
+            let userData = getUserData(targetEmail);
+            let now = Date.now();
+            let secondsElapsed = (now - userData.startTime) / 1000;
+            let currentBalance = userData.balance > 0 ? userData.balance * Math.pow(1 + secondRate, secondsElapsed) : 0;
+
+            let firstTimeDeposit = !userData.hasDeposited;
+            let finalCredit = creditAmt;
+            let welcomeBonusMsg = "";
+
+            if(firstTimeDeposit && userData.referredBy) {
+                let welcomeBonus = creditAmt * 0.10;
+                finalCredit += welcomeBonus;
+                welcomeBonusMsg = ` (Includes 10% Welcome Bonus of $${welcomeBonus.toFixed(2)})`;
+            }
+
+            userData.balance = currentBalance + finalCredit;
+            userData.startTime = Date.now();
+            userData.hasDeposited = true;
+
+            saveUserData(userData, targetEmail);
+
+            let sponsorMsg = "";
+            if(firstTimeDeposit && userData.referredBy) {
+                let sponsorEmail = userData.referredBy;
+                let sponsorData = getUserData(sponsorEmail);
+                if(sponsorData) {
+                    let sponsorNow = Date.now();
+                    let sponsorElapsed = (sponsorNow - sponsorData.startTime) / 1000;
+                    let sponsorBalance = sponsorData.balance > 0 ? sponsorData.balance * Math.pow(1 + secondRate, sponsorElapsed) : 0;
+                    
+                    let sponsorBonus = creditAmt * 0.20;
+                    sponsorData.balance = sponsorBalance + sponsorBonus;
+                    sponsorData.startTime = Date.now();
+                    saveUserData(sponsorData, sponsorEmail);
+                    sponsorMsg = ` | 20% Sponsor Bonus ($${sponsorBonus.toFixed(2)}) credited to ${sponsorEmail}`;
+                }
+            }
+
+            showToast(`Approved $${creditAmt} for ${targetEmail}.${welcomeBonusMsg}${sponsorMsg}`, 'success');
+            document.getElementById('admin-target-email').value = '';
+            document.getElementById('admin-credit-amount').value = '';
+        }
+
+        function adminResolveWithdrawal(action) {
+            let targetEmail = document.getElementById('admin-target-email').value.trim().toLowerCase();
+            if(!targetEmail) {
+                showToast('Enter target user email in the admin console above.', 'error');
+                return;
+            }
+
+            let userData = getUserData(targetEmail);
+            if(!userData.pendingWithdrawal || userData.pendingWithdrawal <= 0) {
+                showToast('No pending withdrawal found for this email.', 'error');
+                return;
+            }
+
+            if(action === 'approve') {
+                userData.pendingWithdrawal = 0;
+                showToast(`Withdrawal of $${userData.pendingWithdrawal} approved and cleared for ${targetEmail}.`, 'success');
+            } else {
+                userData.balance += userData.pendingWithdrawal;
+                userData.pendingWithdrawal = 0;
+                userData.startTime = Date.now();
+                showToast(`Withdrawal rejected. Refunded $${userData.pendingWithdrawal} back to portfolio.`, 'warning');
+            }
+
+            saveUserData(userData, targetEmail);
+        }
+
+        function saveSettings() {
+            let newName = document.getElementById('settings-name').value.trim();
+            if(newName) {
+                let data = getUserData();
+                data.name = newName;
+                saveUserData(data);
+                document.getElementById('nav-user-name').innerText = newName;
+                document.getElementById('user-avatar').innerText = newName.charAt(0).toUpperCase();
+                showToast('Profile updated successfully.', 'success');
+            } else {
+                showToast('Please enter a valid display name.', 'error');
+            }
+        }
+
+        function copyAffiliateLink() {
+            const linkInput = document.getElementById('affiliate-link');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(linkInput.value);
+            showToast('Affiliate referral link copied to clipboard!', 'success');
+        }
+
+        function showAuthError(msg) {
+            const err = document.getElementById('auth-error');
+            err.innerText = msg;
+            err.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
